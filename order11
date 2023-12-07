@@ -1,0 +1,212 @@
+module order (
+    input   wire        sys_clk,
+    input   wire        sys_rst_n,
+
+    input   wire [7:0]  po_data,
+    input   wire        po_flag,
+    output  reg [31:0] address
+);
+
+localparam  FRAME_START = 32'h24_0_0_1;            //ASCII         $001 16进制表示
+localparam  FRAME_FINISH = 32'h23_0_a_0;           //ASCII         a0a0 16进制表示
+localparam  oeder1 = 32'h24_0_0_1;
+localparam  oeder2 = 32'h24_0_0_2;
+
+reg [7:0] state;
+parameter idle = 8'd0;  //$
+parameter s0  = 8'd1 ;  //$0
+parameter s1  = 8'd2 ;  //$00
+parameter s2  = 8'd3 ;  //$001
+parameter s3  = 8'd4 ;  
+parameter s4  = 8'd5 ;  
+parameter s5  = 8'd6 ;  
+parameter s6  = 8'd7 ;  
+parameter s7  = 8'd8 ;  
+parameter s8  = 8'd9 ;  
+always @(posedge sys_clk , negedge sys_rst_n) 
+begin
+    if(~sys_rst_n)
+        begin
+            state <= idle;
+        end
+    else 
+        case (state)
+            idle:
+                begin
+                    if(po_flag && po_data == FRAME_START[31:24]) //$
+                        begin
+                            state <= s0;
+                        end
+                    else
+                        state <= state;
+                end
+            s0:
+                begin
+                    if(po_flag && po_data == FRAME_START[23:16]) //$0
+                        begin
+                            state <= s1;
+                        end
+                    else if(po_flag && po_data == FRAME_START[31:24]) //$
+                        state <= idle;
+                    else
+                        state <= state;
+                end 
+            s1:
+                begin
+                    if(po_flag && po_data == FRAME_START[15:8]) //$00
+                        begin
+                            state <= s2;
+                        end
+                    else if(po_flag && po_data == FRAME_START[31:24]) //$
+                        state <= idle;
+                    else
+                        state <= state;
+                end
+            s2:
+                begin
+                    if(po_flag && po_data == FRAME_START[7:0]) //$001
+                        begin
+                            state <= s3;
+                        end
+                    else if(po_flag && po_data == FRAME_START[31:24]) //$
+                        state <= idle;
+                    else
+                        state <= state;
+                end
+            s3:               
+                 begin
+                    if(po_flag && po_data == FRAME_FINISH[31:24]) //#
+                        state <= s4;
+                    else if(po_flag && po_data == FRAME_START[31:24]) //$
+                        state <= idle;
+                    else
+                        state <= state;
+                end
+            s4:               
+                 begin
+                    if(po_flag && po_data == FRAME_FINISH[31:24]) //#0
+                        state <= s5;
+                    else if(po_flag && po_data == FRAME_START[31:24]) //$
+                        state <= idle;
+                    else
+                        state <= state;
+                end
+            s5:               
+                 begin
+                    if(po_flag && po_data == FRAME_FINISH[31:24]) //#0A
+                        state <= s6;
+                    else if(po_flag && po_data == FRAME_START[31:24]) //$
+                        state <= idle;
+                    else
+                        state <= state;
+                end
+            s6:               
+                 begin
+                    if(po_flag && po_data == FRAME_FINISH[31:24]) //#0A0
+                        state <= s7;
+                    else if(po_flag && po_data == FRAME_START[31:24]) //$
+                        state <= idle;
+                    else
+                        state <= state;
+                end
+            s7:               
+                 begin
+                        state <= s8;
+                end
+            s8:               
+                 begin
+                        state <= idle;
+                end
+             default: state <= idle;
+        endcase
+end
+
+
+reg [7:0] cnt_comma;    //逗号计数�???????
+always @(posedge sys_clk , negedge sys_rst_n) 
+begin
+    if(~sys_rst_n)
+        cnt_comma <= 8'd0;
+    else if(po_flag && po_data == FRAME_START[31:24]) //$
+        cnt_comma <= 8'd0;
+    else if(po_flag && po_data == 8'h2c) //,
+        cnt_comma <= cnt_comma + 8'd1;
+    else
+        cnt_comma <= cnt_comma;
+end
+
+///////逗号间的字节进行计数
+reg [7:0] comma_byte_cnt;
+always @(posedge sys_clk , negedge sys_rst_n) 
+begin
+    if(~sys_rst_n)
+        comma_byte_cnt <= 8'd0;
+    else if(po_flag && po_data == 8'h2c)  //,
+        comma_byte_cnt <= 8'd0;
+    else if(po_flag)
+        comma_byte_cnt <= comma_byte_cnt + 8'd1;
+    else
+        comma_byte_cnt <= comma_byte_cnt;
+end
+
+reg [127:0] data;
+
+always @(posedge sys_clk , negedge sys_rst_n) 
+begin
+    if(~sys_rst_n)
+    begin
+        address <= 48'h0;
+        data    <= 128'd0;
+    end
+     
+    else if(state == idle)
+        address <= 48'h0;
+    else if(po_flag && state == s3 && cnt_comma == 8'd1)
+        begin
+            case (comma_byte_cnt)
+                8'd0 : address[31:24] <= po_data;
+                8'd1 : address[23:16] <= po_data;
+                8'd2 : address[15:8] <= po_data;
+                8'd3 : address[7:0] <= po_data;
+                default: address <= address;
+            endcase
+        end
+    else
+     begin
+            data <= {data[119:0],po_data};
+     end
+end
+
+
+reg [127:0]memory_data[0:65535];
+always @(posedge sys_clk , negedge sys_rst_n) 
+    begin
+    memory_data[address] <= data;
+    end 
+
+
+
+/*always @(posedge sys_clk or negedge sys_rst_n)
+begin
+    if (~sys_rst_n)
+      done <= 1'd0;
+    else if (address == oeder1)
+      done  <= 1'd0;
+    else if (address == oeder2)
+      done  <= 1'd1;
+    else if(po_flag && po_data == FRAME_START[31:24]) //$
+       done <= 8'd0;
+    else 
+       done <= done;
+end*/
+
+
+  ila_0 your_instance_name (
+	.clk(sys_clk), // input wire clk
+
+
+	.probe0() // input wire [7:0] probe0
+);
+  
+endmodule
+
