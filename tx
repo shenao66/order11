@@ -1,0 +1,204 @@
+module uart_tx 
+#(
+    parameter uart_bps = 'd9600,
+    parameter sys_clk = 'd50_000_000
+
+)
+(
+    input wire       clk,
+    input wire       rst_n,
+    input wire [7:0] pi_data,
+    input wire       pi_flag,
+    output reg       done,
+    output reg       tx
+);
+
+    parameter cnt_max = sys_clk / uart_bps - 1'd1;
+
+parameter idle = 8'd0;
+parameter s0 = 8'd1;
+parameter s1 = 8'd2;
+parameter s2 = 8'd3;
+parameter s3 = 8'd4;
+parameter s4 = 8'd5;
+parameter s5 = 8'd6;
+parameter s6 = 8'd7;
+parameter s7 = 8'd8;
+parameter s8 = 8'd9;
+parameter s9 = 8'd10;
+parameter ok = 8'd12;
+
+reg[7:0] state;
+reg [15:0] work_cnt;
+reg [9:0] data_out;
+
+always @(posedge clk or negedge rst_n) begin
+    if(~rst_n)
+        begin
+            state <= idle;
+            work_cnt <= 16'd0;
+            data_out <= 10'b1111111111;
+            done <= 1'b0;
+            tx <= 1'd1;
+        end
+    else
+        case (state)
+            idle:
+                begin
+                    tx <= 1'd1;
+                    done <= 1'd0;
+                    if(pi_flag)
+                        begin
+                            data_out <= {1'd1,pi_data,1'd0};
+                            state <= s0;
+                            work_cnt <= 16'd0;
+                        end 
+                    else    
+                        state <= state;
+                end 
+            s0:
+                begin
+                    tx <= data_out[0];
+                    done <= 1'd0;
+                    if(work_cnt == cnt_max)
+                        begin
+                            work_cnt <= 16'd0;
+                            state <= s1;
+                        end 
+                    else
+                        work_cnt <= work_cnt + 1'd1;
+                end
+            s1:
+                begin
+                    tx <= data_out[1];
+                    done <= 1'd0;
+                    if(work_cnt == cnt_max)
+                        begin
+                            work_cnt <= 16'd0;
+                            state <= s2;
+                        end 
+                    else
+                        work_cnt <= work_cnt + 1'd1;
+                end
+            s2:
+                begin
+                    tx <= data_out[2];
+                    done <= 1'd0;
+                    if(work_cnt == cnt_max)
+                        begin
+                            work_cnt <= 16'd0;
+                            state <= s3;
+                        end 
+                    else
+                        work_cnt <= work_cnt + 1'd1;
+                end
+            s3:
+                begin
+                    tx <= data_out[3];
+                    done <= 1'd0;
+                    if(work_cnt == cnt_max)
+                        begin
+                            work_cnt <= 16'd0;
+                            state <= s4;
+                        end 
+                    else
+                        work_cnt <= work_cnt + 1'd1;
+                end
+            s4:
+                begin
+                    tx <= data_out[4];
+                    done <= 1'd0;
+                    if(work_cnt == cnt_max)
+                        begin
+                            work_cnt <= 16'd0;
+                            state <= s5;
+                        end 
+                    else
+                        work_cnt <= work_cnt + 1'd1;
+                end
+            s5:
+                begin
+                    tx <= data_out[5];
+                    done <= 1'd0;
+                    if(work_cnt == cnt_max)
+                        begin
+                            work_cnt <= 16'd0;
+                            state <= s6;
+                        end 
+                    else
+                        work_cnt <= work_cnt + 1'd1;
+                end
+            s6:
+                begin
+                    tx <= data_out[6];
+                    done <= 1'd0;
+                    if(work_cnt == cnt_max)
+                        begin
+                            work_cnt <= 16'd0;
+                            state <= s7;
+                        end 
+                    else
+                        work_cnt <= work_cnt + 1'd1;
+                end
+            s7:
+                begin
+                    tx <= data_out[7];
+                    done <= 1'd0;
+                    if(work_cnt == cnt_max)
+                        begin
+                            work_cnt <= 16'd0;
+                            state <= s8;
+                        end 
+                    else
+                        work_cnt <= work_cnt + 1'd1;
+                end
+            s8:
+                begin
+                    tx <= data_out[8];
+                    done <= 1'd0;
+                    if(work_cnt == cnt_max)
+                        begin
+                            work_cnt <= 16'd0;
+                            state <= s9;
+                        end 
+                    else
+                        work_cnt <= work_cnt + 1'd1;
+                end
+            s9:
+                begin
+                    tx <= data_out[9];
+                    done <= 1'd0;
+                    if(work_cnt == cnt_max)
+                        begin
+                            work_cnt <= 16'd0;
+                            state <= ok;
+                        end 
+                    else
+                        work_cnt <= work_cnt + 1'd1;
+                end
+            ok:
+                begin
+                    done <= 1'd1;
+                    tx <= 1'd1;
+                    state <= idle;
+                    work_cnt <= 16'd0;
+                    data_out <= 10'b1111111111;
+                end
+            default: 
+                begin
+                    state <= idle;
+                    work_cnt <= 16'd0;
+                    data_out <= 10'b1111111111;
+                    done <= 1'b0;
+                    tx <= 1'd1;
+                end
+        endcase
+end
+
+ila_1 your_instance_name (
+	.clk(sys_clk), // input wire clk
+
+
+	.probe0(po_data) // input wire [7:0] probe0
+);
+endmodule
