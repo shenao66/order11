@@ -1,0 +1,54 @@
+module order(
+    input   wire        sys_clk,
+    input   wire        sys_rst_n,
+
+    input   wire [7:0]  po_data,
+    input   wire        po_flag,
+    output  wire [15:0] address  
+    
+);
+
+reg [407:0] frame;
+
+wire [7:0]  byte1;
+wire [351:0] data;
+reg [351:0]memory_data[0:655];
+always @(posedge sys_clk ,negedge sys_rst_n) 
+begin
+    if(~sys_rst_n)
+        frame <= 1'b0;
+    else if (po_flag)
+        frame <= {frame[399:0],po_data};
+end
+
+assign  address = frame[391:376];
+assign  byte1    = frame[375:368];
+assign  data    = frame[367:16];
+
+
+//鎶婃暟鎹瓨鍒板湴锟????????????????锟????????????????
+
+always @(posedge sys_clk , negedge sys_rst_n) 
+    begin
+        if(~sys_rst_n)
+        memory_data[address] <=128'd0;
+       else 
+        memory_data[address] <= data;
+    end 
+
+//ila_0 your_instance_name (
+//	.clk(sys_clk), // input wire clk
+
+
+//	.probe0(frame), // input wire [407:0]  probe0  
+//	.probe1(address), // input wire [15:0]  probe1 
+//	.probe2(byte1), // input wire [7:0]  probe2 
+//	.probe3(data) // input wire [351:0]  probe3
+//);
+
+
+
+
+
+endmodule
+
