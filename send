@@ -1,0 +1,153 @@
+module send (
+    input wire       clk,
+    input wire       rst_n,
+    input wire       read,
+    input wire       done,
+    input wire [7:0]  byte1,
+    input wire [351:0] data,
+    
+    output reg [7:0] po_data,
+    output reg       po_flag
+);
+
+
+parameter Frame_header = 16'hEA_60;
+parameter Frame_finish = 16'hEA_EA;
+
+
+
+
+wire [7:0] data_mem [0:46];
+
+assign data_mem[0] = Frame_header[15:8];    
+assign data_mem[1] = Frame_header[7:0];    
+assign data_mem[2] = byte1;    
+assign data_mem[3] = data[351:344];   
+assign data_mem[4] = data[343:336];
+assign data_mem[5] = data[335:328];    
+assign data_mem[6] = data[327:320];    
+assign data_mem[7] = data[319:312];    
+assign data_mem[8] = data[311:304];    
+assign data_mem[9] = data[303:296];    
+assign data_mem[10] = data[295:288];    
+assign data_mem[11] = data[287:280]; 
+assign data_mem[12] = data[279:272];
+assign data_mem[13] = data[271:264];
+assign data_mem[14] = data[263:256];
+assign data_mem[15] = data[255:248];
+assign data_mem[16] = data[247:240];    
+assign data_mem[17] = data[239:232];    
+assign data_mem[18] = data[231:224];    
+assign data_mem[19] = data[223:216];    
+assign data_mem[20] = data[215:208];    
+assign data_mem[21] = data[207:200];    
+assign data_mem[22] = data[199:192]; 
+assign data_mem[23] = data[191:184];
+assign data_mem[24] = data[183:176];
+assign data_mem[25] = data[175:168];
+assign data_mem[26] = data[167:160];  
+assign data_mem[27] = data[159:152];    
+assign data_mem[28] = data[151:144];    
+assign data_mem[29] = data[143:136];    
+assign data_mem[30] = data[135:128];    
+assign data_mem[31] = data[127:120];    
+assign data_mem[32] = data[119:112];    
+assign data_mem[33] = data[111:104]; 
+assign data_mem[34] = data[103:96];
+assign data_mem[35] = data[95:88];
+assign data_mem[36] = data[87:80];    
+assign data_mem[37] = data[79:72];    
+assign data_mem[38] = data[71:64];    
+assign data_mem[39] = data[63:56];    
+assign data_mem[40] = data[55:48];    
+assign data_mem[41] = data[47:40];    
+assign data_mem[42] = data[39:32]; 
+assign data_mem[43] = data[31:24];
+assign data_mem[44] = data[23:16];
+assign data_mem[45] = data[15:8];
+assign data_mem[46] = data[7:0];
+assign data_mem[47] = Frame_finish[15:8]; 
+assign data_mem[48] = Frame_finish[7:0];  
+
+
+
+
+parameter idle =8'd0;
+parameter s0 = 8'd1;
+parameter s1 = 8'd2;
+parameter s2 = 8'd3;
+parameter s3 = 8'd4;
+reg [7:0] state;
+reg [7:0] cnt_byte_num;
+always @(posedge clk , negedge rst_n) begin
+    if(~rst_n)
+        begin
+            state <= idle;
+            cnt_byte_num <= 8'd0;
+            po_data <= 8'd0;
+            po_flag <= 1'd0;
+        end
+    else
+        case (state)
+            idle: 
+                begin
+                    if (read)
+                    state <= s0;
+                    else
+                    state <= state;
+                end
+            s0:
+                begin
+                    if(done)
+                        begin
+                            state <= s0;
+                            cnt_byte_num <= 8'd0;
+                            po_data <= 8'd0;
+                            po_flag <= 1'd0;
+                        end
+                    else
+                        state <= state;
+                end
+            s1: 
+                begin
+                    po_data <= data_mem[cnt_byte_num];
+                    state <= s1;
+                    po_flag <= 1'd1;
+                end
+            s2:
+                begin
+                    po_flag <= 1'd0;
+                    if(done)
+                        begin
+                            cnt_byte_num <= cnt_byte_num + 1'd1;
+                            state <= s2;
+                        end
+                    else
+                        state <= state;
+                end 
+            s3:
+                begin
+                    if(cnt_byte_num == 8'd49)
+                        begin
+                            state <= idle;
+                            cnt_byte_num <= 8'd0;
+                        end
+                    else
+                        state <= s0; 
+                end
+            default:
+                begin
+                    state <= idle;
+                    cnt_byte_num <= 8'd0;
+                end 
+        endcase
+end
+
+ila_1 your_instance_name (
+	.clk(clk), // input wire clk
+
+
+	.probe0(po_data) // input wire [7:0] probe0
+);
+
+endmodule
