@@ -1,0 +1,108 @@
+module order(
+    input   wire        sys_clk,
+    input   wire        sys_rst_n,
+    input   wire [7:0]  po_data,
+    input   wire        po_flag,
+    output  reg  read,
+    output  reg [351:0]memory_data[0:2]
+);
+
+reg [407:0] frame;
+reg valid;
+reg [351:0] data ;
+reg [7:0]  address;
+reg [7:0] cnt;
+reg [7:0] cnt_valid;
+always @(posedge sys_clk ,negedge sys_rst_n) 
+begin
+    if(~sys_rst_n)
+        frame <=408'd0;
+    else if (po_flag )
+        frame <= {frame[399:0],po_data};
+    else
+        frame <= frame;
+end
+ 
+
+reg valid;
+reg frame_finished;
+// xuyaowanghuichuan
+always @(posedge sys_clk , negedge sys_rst_n) 
+    begin
+        if(~sys_rst_n)
+            begin
+             read <= 1'd0;
+             valid <= 1'd0;
+             frame_finished <= 1'd0;
+             end
+       else if (frame[407:392] ==16'heaeb && po_flag == 1'd1)
+            begin
+             read <= 1'd1;
+             valid <= 1'd1;
+            end
+       else if (frame[407:392] ==16'hea60 && po_flag == 1'd1)
+            begin
+             valid <= 1'd1;
+             frame_finished<= 1'd1;
+            end
+       else
+           begin
+             read <= 1'd0;
+             valid <= 1'd0;
+           end
+    end
+
+always @(posedge sys_clk , negedge sys_rst_n) 
+    begin
+        if(~sys_rst_n)
+        begin
+        address<= 8'd0;
+        data <= 352'd0;
+        end
+       else if (valid && frame_finished)
+        begin
+        address<=  frame[375:368];
+        data <=  frame[367:16];
+        end
+end
+ 
+
+always @(posedge sys_clk , negedge sys_rst_n) 
+    begin
+        if(~sys_rst_n)
+        memory_data[address][351:0 ]<=128'd0;
+       else  if( frame_finished)
+        memory_data[address] [351:0]<= data;
+    end 
+
+
+
+
+wire [7:0] probe_in0;
+wire [7:0] address_select;
+//wire [351:0]data_selected;
+//assign data_selected = memory_data[address_select];
+vio_0 your_instance_name (
+  .clk(sys_clk),                // input wire clk
+  .probe_in0(probe_in0),    // input wire [7 : 0] probe_in0
+  .probe_out0(address_select)  // output wire [7 : 0] probe_out0
+);
+    
+ila_2 your_instance_name1 (
+	.clk(sys_clk), // input wire clk
+
+
+	.probe0(memory_data[address_select][351:0]),
+	.probe1(address), // input wire [351:0] probe0
+    .probe2(data),
+    .probe3(po_flag),
+    .probe4(frame),
+    .probe5(po_data),
+    .probe6(frame_finished)
+   ) ;
+
+
+
+
+endmodule
+
