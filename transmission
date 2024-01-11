@@ -1,0 +1,46 @@
+module transmission (
+    input wire       clk,
+    input wire       rst_n,
+    input  wire[13:0]memory_data[0:95],
+    output wire [31:0] data_mem [0:35]
+);
+
+assign data_mem[0]  = memory_data[0];    
+assign data_mem[1]  = memory_data[1];    
+assign data_mem[2]  = memory_data[2]; 
+assign data_mem[3]  = memory_data[3];
+assign data_mem[4]  = memory_data[4];
+assign data_mem[5]  = memory_data[5];   
+assign data_mem[6]  = memory_data[6];
+assign data_mem[7]  = memory_data[7];    
+assign data_mem[8]  = memory_data[8];    
+assign data_mem[9]  = memory_data[9];    
+assign data_mem[10] = memory_data[10];    
+assign data_mem[11] = memory_data[11];    
+assign data_mem[12] = memory_data[12];    
+assign data_mem[13] = memory_data[13]; 
+assign data_mem[14] = memory_data[14];
+assign data_mem[15] = memory_data[15];
+assign data_mem[16] = memory_data[16];
+assign data_mem[17] = memory_data[18];
+assign data_mem[18] = memory_data[19];    
+assign data_mem[19] = memory_data[20];    
+assign data_mem[20] = memory_data[32];    
+assign data_mem[21] = memory_data[34];    
+assign data_mem[22] = memory_data[35];    
+assign data_mem[23] = memory_data[36];    
+assign data_mem[24] = memory_data[48]; 
+assign data_mem[25] = memory_data[50];
+assign data_mem[26] = memory_data[51];
+assign data_mem[27] = memory_data[52];
+assign data_mem[28] = memory_data[64];  
+assign data_mem[29] = memory_data[66];    
+assign data_mem[30] = memory_data[67];    
+assign data_mem[31] = memory_data[68];    
+assign data_mem[32] = memory_data[80];    
+assign data_mem[33] = memory_data[82];    
+assign data_mem[34] = memory_data[83];    
+assign data_mem[35] = memory_data[84]; 
+
+
+endmodule
